@@ -33,6 +33,7 @@ func NewCache(defaultExpiration time.Duration) *Cache {
 }
 
 func (c *Cache) Set(key interface{}, val interface{}) {
+	c.ClearExpired()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	exptime := time.Now().Add(c.expiration)
@@ -47,16 +48,19 @@ func (c *Cache) Set(key interface{}, val interface{}) {
 }
 
 func (c *Cache) Get(key interface{}) (val interface{}, ok bool) {
-	c.clearExpired()
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	if val, ok := c.items[key]; ok {
-		return val.Object, true
+		if val.Expiration.After(time.Now()) {
+			return val.Object, true
+		}
 	}
 	return nil, false
 }
 
-func (c *Cache) clearExpired() {
+func (c *Cache) ClearExpired() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	for c.timeouts.Len() > 0 {
 		first := c.timeouts.Front()
 		switch first_elem := first.Value.(type) {
@@ -71,20 +75,20 @@ func (c *Cache) clearExpired() {
 	}
 }
 
-func test_func() {
+func fixed_time_cache_test() {
 
 	c := NewCache(3 * time.Second)
 	c.Set(5, "Hello")
-	aaa, _ := c.Get(5)
+	aaa, ok := c.Get(5)
 	switch a := aaa.(type) {
 	case string:
-		fmt.Print(a)
+		fmt.Println(a, ok)
 	}
 
-	aaa, _ = c.Get(5)
+	aaa, ok = c.Get(5)
 	switch a := aaa.(type) {
 	case string:
-		fmt.Print(a)
+		fmt.Println(a, ok)
 	}
 	return
 }
