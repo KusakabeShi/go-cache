@@ -1,4 +1,4 @@
-package fix_time_cache
+package fixed_time_cache
 
 import (
 	"container/list"
