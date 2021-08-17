@@ -1,7 +1,8 @@
-package cache
+package fix_time_cache
 
 import (
 	"container/list"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -19,15 +20,15 @@ type timeout struct {
 type Cache struct {
 	expiration time.Duration
 	items      map[interface{}]Item
-	timeouts   list.List
+	timeouts   *list.List
 	mu         sync.RWMutex
 }
 
-func (*Cache) NewCache(defaultExpiration time.Duration) *Cache {
+func NewCache(defaultExpiration time.Duration) *Cache {
 	return &Cache{
 		expiration: defaultExpiration,
 		items:      map[interface{}]Item{},
-		timeouts:   *list.New().Init(),
+		timeouts:   list.New(),
 	}
 }
 
@@ -45,11 +46,14 @@ func (c *Cache) Set(key interface{}, val interface{}) {
 	})
 }
 
-func (c *Cache) Get(key interface{}) interface{} {
+func (c *Cache) Get(key interface{}) (val interface{}, ok bool) {
 	c.clearExpired()
 	c.mu.RLock()
-	defer c.mu.Unlock()
-	return c.items[key]
+	defer c.mu.RUnlock()
+	if val, ok := c.items[key]; ok {
+		return val.Object, true
+	}
+	return nil, false
 }
 
 func (c *Cache) clearExpired() {
@@ -61,8 +65,26 @@ func (c *Cache) clearExpired() {
 				delete(c.items, first_elem.Key)
 				c.timeouts.Remove(first)
 			} else {
-				break
+				return
 			}
 		}
 	}
+}
+
+func test_func() {
+
+	c := NewCache(3 * time.Second)
+	c.Set(5, "Hello")
+	aaa, _ := c.Get(5)
+	switch a := aaa.(type) {
+	case string:
+		fmt.Print(a)
+	}
+
+	aaa, _ = c.Get(5)
+	switch a := aaa.(type) {
+	case string:
+		fmt.Print(a)
+	}
+	return
 }
