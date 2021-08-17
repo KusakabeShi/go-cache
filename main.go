@@ -75,7 +75,7 @@ func (c *Cache) ClearExpired() {
 	}
 }
 
-func fixed_time_cache_test() {
+func fixed_time_cache_example() {
 
 	c := NewCache(3 * time.Second)
 	c.Set(5, "Hello")
@@ -83,11 +83,25 @@ func fixed_time_cache_test() {
 	switch a := aaa.(type) {
 	case string:
 		fmt.Println(a, ok)
+	case nil:
+		fmt.Println(a, ok)
 	}
 
+	time.Sleep(2 * time.Second)
 	aaa, ok = c.Get(5)
 	switch a := aaa.(type) {
 	case string:
+		fmt.Println(a, ok)
+	case nil:
+		fmt.Println(a, ok)
+	}
+
+	time.Sleep(2 * time.Second)
+	aaa, ok = c.Get(5)
+	switch a := aaa.(type) {
+	case string:
+		fmt.Println(a, ok)
+	case nil:
 		fmt.Println(a, ok)
 	}
 	return
