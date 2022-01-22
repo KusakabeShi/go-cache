@@ -76,16 +76,32 @@ func (c *Cache) ClearExpired() {
 		return
 	}
 	c.nextClear = time.Now().Add(c.ClearCooldown)
+	need_clean := false
+
 	c.timeouts_lock.RLock()
-	for pair := c.timeouts.Oldest(); pair != nil; pair = pair.Next() {
+	pair := c.timeouts.Oldest()
+	if pair != nil {
 		if time.Now().After(pair.Value.(time.Time)) {
-			c.timeouts_lock.RUnlock()
-			c.timeouts_lock.Lock()
-			c.timeouts.Delete(pair.Key)
-			c.items.Delete(pair.Key)
-			c.timeouts_lock.Unlock()
-			c.timeouts_lock.RLock()
+			need_clean = true
 		}
 	}
 	c.timeouts_lock.RUnlock()
+	if !need_clean {
+		return
+	}
+	
+	c.timeouts_lock.Lock()
+	defer c.timeouts_lock.Unlock()
+
+	for pair != nil {
+		next := pair.Next()
+		if time.Now().After(pair.Value.(time.Time)) {
+			c.timeouts.Delete(pair.Key)
+			c.items.Delete(pair.Key)
+		} else {
+			break
+		}
+		pair = next
+	}
+
 }
