@@ -1,7 +1,6 @@
 package fixed_time_cache
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -89,47 +88,4 @@ func (c *Cache) ClearExpired() {
 		}
 	}
 	c.timeouts_lock.RUnlock()
-}
-
-func example() {
-
-	c := NewCache(3*time.Second, false, 1*time.Second)
-	c.Set(5, "Hello")
-	aaa, ok := c.Get(5)
-	switch a := aaa.(type) {
-	case string:
-		fmt.Println(a, ok)
-	case nil:
-		fmt.Println(a, ok)
-	}
-
-	time.Sleep(2 * time.Second)
-	aaa, ok = c.Get(5)
-	switch a := aaa.(type) {
-	case string:
-		fmt.Println(a, ok)
-	case nil:
-		fmt.Println(a, ok)
-	}
-
-	time.Sleep(2 * time.Second)
-	aaa, ok = c.Get(5)
-	switch a := aaa.(type) {
-	case string:
-		fmt.Println(a, ok)
-	case nil:
-		fmt.Println(a, ok)
-	}
-
-	c.Set(6, "Hi")
-	time.Sleep(4 * time.Second)
-	c.Set(7, "Ho")
-	aaa, ok = c.Get(6)
-	switch a := aaa.(type) {
-	case string:
-		fmt.Println(a, ok)
-	case nil:
-		fmt.Println(a, ok)
-	}
-	return
 }
