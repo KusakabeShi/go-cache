@@ -13,7 +13,7 @@ func TestExpire(t *testing.T) {
 	fmt.Println("Store")
 	c.Set(5, "Hello")
 	fmt.Println("Get")
-	aaa, ok := c.Get(5)
+	aaa, ok := c.Load(5)
 	switch a := aaa.(type) {
 	case string:
 		fmt.Println(a, ok)
@@ -23,7 +23,7 @@ func TestExpire(t *testing.T) {
 	fmt.Println("Sleep 2")
 	time.Sleep(2 * time.Second)
 	fmt.Println("Get")
-	aaa, ok = c.Get(5)
+	aaa, ok = c.Load(5)
 	switch a := aaa.(type) {
 	case string:
 		fmt.Println(a, ok)
@@ -33,7 +33,7 @@ func TestExpire(t *testing.T) {
 	fmt.Println("Sleep 2")
 	time.Sleep(2 * time.Second)
 	fmt.Println("Get")
-	aaa, ok = c.Get(5)
+	aaa, ok = c.Load(5)
 	switch a := aaa.(type) {
 	case string:
 		fmt.Println(a, ok)
@@ -47,7 +47,7 @@ func TestExpire(t *testing.T) {
 	fmt.Println("Store 7")
 	c.Set(7, "Ho")
 	fmt.Println("Get 6")
-	aaa, ok = c.Get(6)
+	aaa, ok = c.Load(6)
 	switch a := aaa.(type) {
 	case string:
 		fmt.Println(a, ok)
@@ -57,32 +57,29 @@ func TestExpire(t *testing.T) {
 }
 
 func TestExtend(t *testing.T) {
-	c := NewCache(1*time.Second, true, 0*time.Second)
-	for i := 0; i < 10000; i++ {
-		c.Set(i, "Hello")
-		c.Set(i, "Hi")
-		c.Set(i, "Hey")
-	}
-	for i := 0; i < 10000; i++ {
-		c.Get(i)
-		c.Get(i)
-		c.Get(i)
+	c := NewCache(3*time.Second, true, 0*time.Second)
+	for i := 0; i < 10; i++ {
+		c.Set(i, i)
 	}
 	time.Sleep(2 * time.Second)
-	for i := 0; i < 10000; i++ {
-		c.Set(5, "Hello")
-		c.Set(8, "Ho")
-	}
-	for i := 0; i < 10000; i++ {
-		c.Get(5)
-		c.Get(8)
-	}
-	aaa, _ := c.Get(5)
+	c.Load(5)
+	c.Load(8)
+	time.Sleep(2 * time.Second)
+	c.Set(11, 11)
+	aaa, _ := c.Load(5)
 	fmt.Printf("Get 5:%v\n", aaa)
-	aaa, _ = c.Get(6)
+	aaa, _ = c.Load(6)
 	fmt.Printf("Get 6:%v\n", aaa)
-	aaa, _ = c.Get(5)
+	aaa, _ = c.Load(8)
+	fmt.Printf("Get 8:%v\n", aaa)
+	time.Sleep(4 * time.Second)
+	aaa, _ = c.Load(5)
 	fmt.Printf("Get 5:%v\n", aaa)
+	aaa, _ = c.Load(6)
+	fmt.Printf("Get 6:%v\n", aaa)
+	aaa, _ = c.Load(8)
+	fmt.Printf("Get 8:%v\n", aaa)
+	c.Set(11, 11)
 }
 
 func sleepUntil(t time.Time) {
@@ -93,63 +90,47 @@ func sleepUntil(t time.Time) {
 	time.Sleep(u)
 }
 
+func PrintMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	fmt.Printf("Alloc: %v MiB", bToMb(m.Alloc))
+	fmt.Printf("\tTotalAlloc: %v MiB", bToMb(m.TotalAlloc))
+	fmt.Printf("\tSys: %v MiB", bToMb(m.Sys))
+	fmt.Printf("\tNumGC: %v\n", m.NumGC)
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
+}
+
+func RunRound(c *Cache, round int) {
+	base := 1000000
+	now := time.Now()
+	for i := base * round; i < base*(round+1); i++ {
+		c.Set(i, true)
+	}
+
+	fmt.Printf("Round: %v\t", round)
+	PrintMemUsage()
+	sleepUntil(now.Add(c.expiration).Add(-1000 * time.Millisecond))
+}
+
 func TestLarge(t *testing.T) {
 	to := 5 * time.Second
 
-	c := NewCache(to, true, 1*time.Second)
-	base := 1000000
-	n := time.Now()
-	for i := 0; i < base; i++ {
-		c.Set(i, true)
+	c := NewCache(to, true, 100*time.Microsecond)
+	for r := 0; r < 30; r++ {
+		RunRound(c, r)
 	}
-	sleepUntil(n.Add(to).Add(time.Second))
-	n = time.Now()
-	for i := base; i < 2*base; i++ {
-		c.Set(i, true)
-	}
-	sleepUntil(n.Add(to).Add(time.Second))
-	n = time.Now()
-	for i := 2 * base; i < 3*base; i++ {
-		c.Set(i, true)
-	}
-	sleepUntil(n.Add(to).Add(time.Second))
-	n = time.Now()
-	c.ClearExpired()
-	for i := 2 * base; i < 3*base; i++ {
-		c.Set(i, true)
-	}
-	sleepUntil(n.Add(to).Add(time.Second))
-	n = time.Now()
-	c.ClearExpired()
-	for i := 2 * base; i < 3*base; i++ {
-		c.Set(i, true)
-	}
-	sleepUntil(n.Add(to).Add(time.Second))
-	n = time.Now()
-	c.ClearExpired()
-	for i := 2 * base; i < 3*base; i++ {
-		c.Set(i, true)
-	}
-	sleepUntil(n.Add(to).Add(time.Second))
-	n = time.Now()
-	c.ClearExpired()
-	for i := 2 * base; i < 3*base; i++ {
-		c.Set(i, true)
-	}
-	sleepUntil(n.Add(to).Add(time.Second))
-	n = time.Now()
-	c.ClearExpired()
-	for i := 2 * base; i < 3*base; i++ {
-		c.Set(i, true)
-	}
-	sleepUntil(n.Add(to).Add(time.Second))
-	n = time.Now()
-	c.ClearExpired()
-
-	aaa, _ := c.Get(1)
+	c.Set(1, false)
+	runtime.GC()
+	aaa, _ := c.Load(1)
 	fmt.Println(aaa)
-	aaa, _ = c.Get(100)
+	aaa, _ = c.Load(100)
 	fmt.Println(aaa)
+	fmt.Printf("Final: \t")
+	PrintMemUsage()
 }
 
 func TestSynaMap(t *testing.T) {
