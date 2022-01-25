@@ -45,7 +45,9 @@ func (c *Cache) Set(key interface{}, val interface{}) {
 	c.ClearExpired()
 	exptime := time.Now().Add(c.expiration)
 	c.items.Store(key, Item{Object: val, Expiration: exptime})
+	c.timeouts_lock.Lock()
 	c.timeouts.Set(key, true)
+	c.timeouts_lock.Unlock()
 	c.moveToBack(key)
 }
 func (c *Cache) Get(key interface{}, ExtendOnGet bool) (val interface{}, ok bool) {
