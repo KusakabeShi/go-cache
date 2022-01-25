@@ -13,33 +13,18 @@ func TestExpire(t *testing.T) {
 	fmt.Println("Store")
 	c.Set(5, "Hello")
 	fmt.Println("Get")
-	aaa, ok := c.Load(5)
-	switch a := aaa.(type) {
-	case string:
-		fmt.Println(a, ok)
-	case nil:
-		fmt.Println(a, ok)
-	}
+	aaa, _ := c.Load(5)
+	fmt.Println(aaa)
 	fmt.Println("Sleep 2")
 	time.Sleep(2 * time.Second)
 	fmt.Println("Get")
-	aaa, ok = c.Load(5)
-	switch a := aaa.(type) {
-	case string:
-		fmt.Println(a, ok)
-	case nil:
-		fmt.Println(a, ok)
-	}
+	aaa, _ = c.Load(5)
+	fmt.Println(aaa)
 	fmt.Println("Sleep 2")
 	time.Sleep(2 * time.Second)
 	fmt.Println("Get")
-	aaa, ok = c.Load(5)
-	switch a := aaa.(type) {
-	case string:
-		fmt.Println(a, ok)
-	case nil:
-		fmt.Println(a, ok)
-	}
+	aaa, _ = c.Load(5)
+	fmt.Println(aaa)
 	fmt.Println("Store 6")
 	c.Set(6, "Hi")
 	fmt.Println("Sleep 4")
@@ -47,13 +32,17 @@ func TestExpire(t *testing.T) {
 	fmt.Println("Store 7")
 	c.Set(7, "Ho")
 	fmt.Println("Get 6")
-	aaa, ok = c.Load(6)
-	switch a := aaa.(type) {
-	case string:
-		fmt.Println(a, ok)
-	case nil:
-		fmt.Println(a, ok)
-	}
+	aaa, _ = c.Load(6)
+	fmt.Println(aaa)
+}
+
+func TestSet(t *testing.T) {
+	c := NewCache(3*time.Second, false, 1*time.Second)
+	c.Set(5, "Hello")
+	c.Set(6, "Hello")
+	c.Set(7, "Hello")
+	c.Set(5, "Hello")
+	c.Load(5)
 }
 
 func TestExtend(t *testing.T) {
